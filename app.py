@@ -1371,11 +1371,6 @@ def render_benchmark_lab(context: dict[str, Any] | None) -> None:
         heatmap_data = results[
             ["Model", "Accuracy", "AUC", "Precision", "Recall", "F1", "MCC"]
         ].melt(id_vars="Model", var_name="Metric", value_name="Score")
-        heatmap_data["LabelColor"] = np.where(
-            heatmap_data["Score"].abs() > 0.6,
-            "white",
-            "#172554",
-        )
         heatmap_base = alt.Chart(heatmap_data).encode(
             x=alt.X("Metric:N", sort=METRIC_NAMES, axis=alt.Axis(labelAngle=-35)),
             y=alt.Y("Model:N", sort=ranked["Model"].tolist(), title=None),
@@ -1384,7 +1379,7 @@ def render_benchmark_lab(context: dict[str, Any] | None) -> None:
             color=alt.Color(
                 "Score:Q",
                 title="Score",
-                scale=alt.Scale(domain=[-1, 1], scheme="bluepurple"),
+                scale=alt.Scale(domain=[-1, 1], scheme="redblue"),
             ),
             tooltip=[
                 alt.Tooltip("Model:N"),
@@ -1394,7 +1389,11 @@ def render_benchmark_lab(context: dict[str, Any] | None) -> None:
         )
         score_labels = heatmap_base.mark_text(fontSize=11, fontWeight="bold").encode(
             text=alt.Text("Score:Q", format=".2f"),
-            color=alt.Color("LabelColor:N", scale=None, legend=None),
+            color=alt.condition(
+                (alt.datum.Score > 0.6) | (alt.datum.Score < -0.6),
+                alt.value("white"),
+                alt.value("#172554"),
+            ),
         )
         st.altair_chart(
             (score_cells + score_labels)
@@ -1535,11 +1534,6 @@ def render_feature_studio(
             .reset_index()
             .melt(id_vars="Feature", var_name="Related feature", value_name="Correlation")
         )
-        correlation_data["LabelColor"] = np.where(
-            correlation_data["Correlation"].abs() > 0.55,
-            "white",
-            "#172554",
-        )
         correlation_base = alt.Chart(correlation_data).encode(
             x=alt.X(
                 "Related feature:N",
@@ -1567,7 +1561,11 @@ def render_feature_studio(
             fontWeight="bold",
         ).encode(
             text=alt.Text("Correlation:Q", format=".2f"),
-            color=alt.Color("LabelColor:N", scale=None, legend=None),
+            color=alt.condition(
+                (alt.datum.Correlation > 0.55) | (alt.datum.Correlation < -0.55),
+                alt.value("white"),
+                alt.value("#172554"),
+            ),
         )
         st.altair_chart(
             (correlation_cells + correlation_labels)
